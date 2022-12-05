@@ -42,97 +42,52 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 class Star
 {
 	RECT rectangle;
-	int ticks, quadrant = 0, zValue = 1;
-	int centerX, centerY;
+	int ticks, zValue = 1;
+	int x;
+	double y;
+	double angle, slope;
 public:
-	Star(int x, int y, int centerX, int centerY)
-		: centerX{ centerX }, centerY{ centerY }
+	Star(int x, double y) : x{ x }, y{ y }
 	{
 		ticks = 0;
-		if (x < centerX && y < centerY)
-		{
-			quadrant = 2;
-			rectangle.left = x;
-			rectangle.top = y;
-			rectangle.right = x + 1;
-			rectangle.bottom = y + 1;
-		}
-		if (x > centerX && y < centerY)
-		{
-			quadrant = 1;
-			rectangle.right = x;
-			rectangle.top = y;
-			rectangle.left = x - 1;
-			rectangle.bottom = y + 1;
-		}
-		if (x < centerX && y > centerY)
-		{
-			quadrant = 3;
-			rectangle.left = x;
-			rectangle.right = x + 1;
-			rectangle.bottom = y;
-			rectangle.top = y - 1;
-		}
-		if (x > centerX && y > centerY)
-		{
-			quadrant = 4;
-			rectangle.bottom = y;
-			rectangle.right = x;
-			rectangle.top = y - 1;
-			rectangle.left = x - 1;
-		}
+		angle = std::atan2(y, x);
+		slope = static_cast<double>(y) / x;
 	}
 
 	void Update()
 	{
 		ticks++;
-		if (quadrant == 1)
+		if (x <= 0)
 		{
-			rectangle.right = rectangle.right + 1;
-			rectangle.top = rectangle.top - 1;
-			rectangle.left = rectangle.left + 1;
-			rectangle.bottom = rectangle.bottom - 1;
-			if (ticks % 30 == 0)
+			x -= 1;
+			if (y > 0)
 			{
-				rectangle.left -= 1;
-				rectangle.bottom += 1;
+				y += slope;
+			}
+			else if (y < 0)
+			{
+				y -= slope;
 			}
 		}
-		if (quadrant == 2)
+		else if (x > 0)
 		{
-			rectangle.right = rectangle.right - 1;
-			rectangle.top = rectangle.top - 1;
-			rectangle.left = rectangle.left - 1;
-			rectangle.bottom = rectangle.bottom - 1;
-			if (ticks % 30 == 0)
+			x += 1;
+			if (y > 0)
 			{
-				rectangle.right += 1;
-				rectangle.bottom += 1;
+				y -= slope;
+			}
+			else if (y < 0)
+			{
+				y += slope;
 			}
 		}
-		if (quadrant == 3)
+		rectangle.left = x;
+		rectangle.right = x - zValue;
+		rectangle.top = y;
+		rectangle.bottom = y - zValue;
+		if (ticks % 100 == 0)
 		{
-			rectangle.right = rectangle.right - 1;
-			rectangle.top = rectangle.top + 1;
-			rectangle.left = rectangle.left - 1;
-			rectangle.bottom = rectangle.bottom + 1;
-			if (ticks % 30 == 0)
-			{
-				rectangle.right += 1;
-				rectangle.top -= 1;
-			}
-		}
-		if (quadrant == 4)
-		{
-			rectangle.right = rectangle.right + 1;
-			rectangle.top = rectangle.top + 1;
-			rectangle.left = rectangle.left + 1;
-			rectangle.bottom = rectangle.bottom + 1;
-			if (ticks % 30 == 0)
-			{
-				rectangle.left -= 1;
-				rectangle.top -= 1;
-			}
+			zValue++;
 		}
 	}
 
@@ -152,13 +107,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 	static std::random_device rd;
 	static std::mt19937 gen(rd());
 	static int xClient, yClient, xCenter, yCenter;
-	static std::uniform_int_distribution<> xDistrib(0, 1600), yDistrib(0, 2000);
+	static std::uniform_int_distribution<> xDistrib(-100, 100), yDistrib(-100, 100);
 	static std::vector<Star> stars;
 	static int i = 0;
 	switch (message)
 	{
 	case WM_CREATE:
-		stars.push_back( Star(xDistrib(gen), yDistrib(gen), xCenter, yCenter));
+		stars.push_back( Star(xDistrib(gen), yDistrib(gen)));
 		return 0;
 	case WM_SIZE:
 		xClient = LOWORD(lparam);
@@ -168,6 +123,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 		return 0;
 	case WM_PAINT:
 		hdc = BeginPaint(hwnd, &ps);
+		SetViewportOrgEx(hdc, xCenter, yCenter, nullptr);
 		for (Star& s : stars)
 		{
 			s.DrawStar(hdc);
@@ -185,7 +141,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 		}
 		if (wparam == STARRATE)
 		{
-			stars.push_back(Star(xDistrib(gen), yDistrib(gen), xCenter, yCenter));
+			stars.push_back(Star(xDistrib(gen), yDistrib(gen)));
 
 		}
 		if (wparam == DEBUG)
