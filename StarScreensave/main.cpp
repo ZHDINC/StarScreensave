@@ -2,7 +2,7 @@
 #include<vector>
 #include<random>
 
-constexpr int TIMER = 500, TICKRATE = 10, STARRATE = 1000, DEBUG = 1500;
+constexpr int TIMER = 500, TICKRATE = 10, STARRATE = 1000, DEBUG = 1500, DESTROYSTARRATE = 2500;
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
@@ -28,6 +28,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine,
 	SetTimer(hwnd, TIMER, TICKRATE, nullptr);
 	SetTimer(hwnd, STARRATE, TICKRATE * 2, nullptr);
 	//SetTimer(hwnd, DEBUG, TICKRATE * 10, nullptr);
+	SetTimer(hwnd, DESTROYSTARRATE, TICKRATE * 1000, nullptr);
 	ShowWindow(hwnd, iCmdShow);
 	UpdateWindow(hwnd);
 	MSG msg;
@@ -104,6 +105,11 @@ public:
 		}
 	}
 
+	bool Erase()
+	{
+		return !drawFlag;
+	}
+
 	~Star() { }
 };
 
@@ -160,6 +166,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 		if (wparam == DEBUG)
 		{
 			i++;
+		}
+		if (wparam == DESTROYSTARRATE)
+		{
+			std::erase_if(stars, [&](Star s) {return s.Erase(); });
 		}
 		return 0;
 	case WM_CLOSE:
